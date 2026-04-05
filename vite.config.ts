@@ -6,3 +6,4 @@ export default defineConfig({
   // O PONTO antes da barra é a grande mágica aqui!
   base: './', 
 });
+
