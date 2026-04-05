@@ -4,9 +4,9 @@ import {
   CheckCircle2, XCircle, NotebookPen, Flag, EyeOff, Eye, Eraser, Info, Sparkles, StickyNote,
   GraduationCap, BookOpen, Hand, MousePointerClick, ChevronDown, ChevronUp, Play, Trophy, Search, Award
 } from 'lucide-react';
+import Papa from 'papaparse';
 
-import FilterScreen from './FilterScreen'; // O seu FilterScreen intacto
-import { questionsData } from './data';
+import FilterScreen from './FilterScreen'; 
 
 // ============================================================================
 // 1. TIPAGENS INTEGRAIS
@@ -76,7 +76,7 @@ const localDb = {
     const today = new Date().toDateString();
     const usage = JSON.parse(localStorage.getItem(STORAGE_KEYS.USAGE) || '{"date":"","count":0}');
     if (usage.date !== today) { localStorage.setItem(STORAGE_KEYS.USAGE, JSON.stringify({ date: today, count: 1 })); return true; }
-    if (usage.count >= 10) return false; // Limite do plano FREE
+    if (usage.count >= 10) return false; 
     localStorage.setItem(STORAGE_KEYS.USAGE, JSON.stringify({ date: today, count: usage.count + 1 }));
     return true;
   }
@@ -127,7 +127,7 @@ const ExamsScreen: React.FC<{ questions: Partial<Question>[], history: UserHisto
     const historyMap = new Map(history.map(h => [h.questionId, h.isCorrect]));
 
     Object.entries(groups).forEach(([key, data]) => {
-      if (data.count > 0) { // Na versão local deixei > 0 para aparecer as do data.ts
+      if (data.count > 0) { 
         const [origem, ano] = key.split(' - ');
         let correctCount = 0; let doneCount = 0;
         data.ids.forEach(qid => { if (historyMap.has(qid)) { doneCount++; if (historyMap.get(qid)) correctCount++; } });
@@ -243,7 +243,7 @@ const QuestionCard: React.FC<any> = ({ question, currentIndex, totalQuestions, o
 
   useEffect(() => { if (onStateChange) onStateChange({ selectedOption, isSubmitted, isCommentExpanded: true, eliminatedOptions, highlights }); }, [selectedOption, isSubmitted, eliminatedOptions, highlights]);
 
-  const gabaritoRaw = question.correta ? question.correta.toUpperCase() : '';
+  const gabaritoRaw = question.correta ? String(question.correta).toUpperCase() : '';
   const isAnulada = gabaritoRaw.includes('ANULADA') || gabaritoRaw.includes('EXCLUIDA');
   const correctKeys = useMemo(() => isAnulada ? [] : gabaritoRaw.split('/').map((k:string) => k.trim()), [gabaritoRaw, isAnulada]);
   const categoryDisplay = CATEGORY_MAP[question.categoria] || question.categoria;
@@ -418,7 +418,7 @@ const QuizResultScreen = ({ questions, sessionState, onRetry, onExit }: any) => 
 };
 
 // ============================================================================
-// 7. ORQUESTRADOR PRINCIPAL (APP LITE)
+// 7. ORQUESTRADOR PRINCIPAL (APP LITE COM GOOGLE SHEETS)
 // ============================================================================
 export default function App() {
   const [appState, setAppState] = useState<'BOOT' | 'READY'>('BOOT');
@@ -437,17 +437,72 @@ export default function App() {
   const timerRef = useRef(0);
   const [settings] = useState<AppSettings>({ theme: 'light', focusMode: false });
 
+  // 👇 LÓGICA DE FETCH DINÂMICO DO GOOGLE SHEETS (VIA PAPAPARSE) 👇
   useEffect(() => {
-    setMetadata(questionsData);
-    setHistory(localDb.getHistory());
-    
-    const prog = localDb.getProgress();
-    if (prog) {
-      if (prog.current_view) setCurrentView(prog.current_view);
-      if (prog.filters) setFilters(prog.filters);
-    }
-    setTimeout(() => setAppState('READY'), 800); // Simulando loading
+    const loadApp = async () => {
+      try {
+        const SHEET_ID = '1K9p0IyfTZ-tS21LdOdEHBbX34ZDETlCngVfigrnAKnc';
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const loadedQuestions: Question[] = results.data.map((row: any) => ({
+              id: Number(row.id || Math.floor(Math.random() * 10000)),
+              ano: String(row.ano || ""),
+              origem: String(row.origem || "Desconhecido"),
+              banca: String(row.banca || ""),
+              categoria: String(row.categoria || ""),
+              especialidade: String(row.especialidade || ""),
+              tema_especifico: String(row.tema_especifico || ""),
+              competencias: String(row.competencias || ""),
+              enunciado: String(row.enunciado || ""),
+              a: String(row.a || ""),
+              b: String(row.b || ""),
+              c: String(row.c || ""),
+              d: String(row.d || ""),
+              e: String(row.e || ""),
+              correta: String(row.correta || "").trim(),
+              comentario: String(row.comentario || ""),
+              justificativa_a: String(row.justificativa_a || ""),
+              justificativa_b: String(row.justificativa_b || ""),
+              justificativa_c: String(row.justificativa_c || ""),
+              justificativa_d: String(row.justificativa_d || ""),
+              justificativa_e: String(row.justificativa_e || "")
+            }));
+
+            // Ignorar linhas em branco que as planilhas do google podem gerar no fim do CSV
+            const validQuestions = loadedQuestions.filter(q => q.enunciado && q.enunciado.length > 5);
+
+            setMetadata(validQuestions);
+            setHistory(localDb.getHistory());
+            
+            const prog = localDb.getProgress();
+            if (prog) {
+              if (prog.current_view) setCurrentView(prog.current_view);
+              if (prog.filters) setFilters(prog.filters);
+            }
+            
+            setAppState('READY');
+          },
+          error: (error) => {
+            console.error("Erro ao ler o CSV do Google:", error);
+            setAppState('READY'); 
+          }
+        });
+      } catch (err) {
+        console.error("Erro na requisição do Google Sheets:", err);
+        setAppState('READY');
+      }
+    };
+
+    loadApp();
   }, []);
+  // 👆 FIM DA LÓGICA DE FETCH 👆
 
   const persist = useCallback((pPage: number, pFilt: any, pSt: string, pSess: any, pView: string) => {
     localDb.saveProgress({ page: pPage, filters: pFilt, timer: timerRef.current, session: pSess, view: pView, current_view: pView });
@@ -475,7 +530,7 @@ export default function App() {
     persist(1, filters, 'active', {}, 'exams');
   };
 
-  if (appState === 'BOOT') return <GlobalLoading message="Iniciando plataforma..." />;
+  if (appState === 'BOOT') return <GlobalLoading message="Conectando à base de dados..." />;
 
   return (
     <>
