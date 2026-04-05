@@ -4,16 +4,15 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import {
   BookOpen, Calendar, Building2, Play, BookMarked, X,
   Settings2, CheckCircle2, Search, EyeOff,
-  Trash2, Layers, ArrowRight, Filter, Plus, RefreshCw,
-  Loader2, Stethoscope, Brain, ChevronDown, ChevronLeft, ChevronRight, Zap, Info,
-  History, Save, Copy, Clipboard, Repeat, PenLine
+  Trash2, ArrowRight, Filter, Plus,
+  Loader2, Stethoscope, Brain, ChevronDown, ChevronLeft, ChevronRight, Zap,
+  History, Save, Copy, Clipboard, Repeat,
 } from 'lucide-react';
 
-// Importando tipos do arquivo unificado
 import { FilterState, Question, UserHistoryItem } from './App';
 
 // ============================================================================
-// SERVIÇOS LOCAIS DE SESSÃO (Substituindo o Supabase para Simulados Salvos)
+// SERVIÇOS LOCAIS DE SESSÃO
 // ============================================================================
 export interface QuizSession {
   id: string;
@@ -52,13 +51,13 @@ const deleteQuizSessionLocal = (sessionId: string): void => {
 // ─────────────────────────────────────────────
 // MAPEAMENTOS
 // ─────────────────────────────────────────────
+
+// FIX: removido alias CATEGORY_NAMES_INTERNAL (era idêntico a GRANDES_AREAS_MAP)
 const GRANDES_AREAS_MAP: Record<string, string> = {
   'CB': 'Ciclo Básico', 'CC': 'Clínica Cirúrgica', 'CM': 'Clínica Médica',
   'GO': 'Ginecologia e Obstetrícia', 'PED': 'Pediatria', 'SC': 'Saúde Coletiva',
   'PREV': 'Medicina Preventiva', 'SM': 'Saúde Mental',
 };
-
-const CATEGORY_NAMES_INTERNAL = GRANDES_AREAS_MAP;
 
 const COMPETENCIA_PRIORITY = ['Epidemiologia', 'Fisiopatologia', 'Diagnóstico', 'Conduta'];
 
@@ -114,12 +113,20 @@ const PromoBannerCarousel = React.memo(() => {
       <div className="flex h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}>
         {BANNER_IMAGES.map((imageName, index) => (
           <div key={index} className="min-w-full h-full flex items-center justify-center">
-            <img src={`/banners/${imageName}`} alt={`Promoção ${index + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img
+              src={`/banners/${imageName}`} alt={`Promoção ${index + 1}`}
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
           </div>
         ))}
       </div>
-      <button onClick={goPrev} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center text-slate-600 dark:text-white hover:bg-white transition-colors"><ChevronLeft size={16} /></button>
-      <button onClick={goNext} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center text-slate-600 dark:text-white hover:bg-white transition-colors"><ChevronRight size={16} /></button>
+      <button onClick={goPrev} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center text-slate-600 dark:text-white hover:bg-white transition-colors">
+        <ChevronLeft size={16} />
+      </button>
+      <button onClick={goNext} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center text-slate-600 dark:text-white hover:bg-white transition-colors">
+        <ChevronRight size={16} />
+      </button>
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
         {BANNER_IMAGES.map((_, index) => (
           <button key={index} onClick={() => goToSlide(index)} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === currentSlideIndex ? 'bg-[#BD4234] w-4' : 'bg-white/60'}`} />
@@ -130,132 +137,75 @@ const PromoBannerCarousel = React.memo(() => {
 });
 
 // ─────────────────────────────────────────────
-// TIPOS PARA FACETS E COMPONENTES VISUAIS
+// TIPOS
 // ─────────────────────────────────────────────
-interface FilterOption {
-  value: string;
-  label: string;
-  count: number;
-}
+interface FilterOption { value: string; label: string; count: number; }
 
 interface FilterSectionProps {
-  title: string;
-  icon: React.ElementType;
-  items: FilterOption[];
-  selectedItems: string[];
-  onToggle: (val: string) => void;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  enableSearch?: boolean;
+  title: string; icon: React.ElementType; items: FilterOption[];
+  selectedItems: string[]; onToggle: (val: string) => void;
+  isOpen: boolean; onToggleOpen: () => void; enableSearch?: boolean;
 }
 
-const FilterSection = React.memo(
-  ({
-    title,
-    icon: Icon,
-    items,
-    selectedItems,
-    onToggle,
-    isOpen,
-    onToggleOpen,
-    enableSearch,
-  }: FilterSectionProps) => {
-    const [searchTerm, setSearchTerm] = useState("");
+const FilterSection = React.memo(({ title, icon: Icon, items, selectedItems, onToggle, isOpen, onToggleOpen, enableSearch }: FilterSectionProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
 
-    const visibleItems = useMemo(() => {
-      if (!enableSearch || !searchTerm) return items;
-      const s = searchTerm.toLowerCase();
-      return items.filter((opt) => opt.label.toLowerCase().includes(s));
-    }, [items, searchTerm, enableSearch]);
+  const visibleItems = useMemo(() => {
+    if (!enableSearch || !searchTerm) return items;
+    const s = searchTerm.toLowerCase();
+    return items.filter(opt => opt.label.toLowerCase().includes(s));
+  }, [items, searchTerm, enableSearch]);
 
-    const selectedSet = useMemo(() => new Set(selectedItems), [selectedItems]);
+  const selectedSet = useMemo(() => new Set(selectedItems), [selectedItems]);
 
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <button
-          onClick={onToggleOpen}
-          className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Icon size={16} className="text-slate-400" />
-            <span className="font-medium text-sm text-slate-700 dark:text-slate-300">
-              {title}
-            </span>
-            {selectedItems.length > 0 && (
-              <span className="text-xs bg-[#BD4234] text-white px-1.5 py-0.5 rounded-full font-semibold">
-                {selectedItems.length}
-              </span>
-            )}
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <button onClick={onToggleOpen} className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+        <div className="flex items-center gap-2">
+          <Icon size={16} className="text-slate-400" />
+          <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{title}</span>
+          {selectedItems.length > 0 && (
+            <span className="text-xs bg-[#BD4234] text-white px-1.5 py-0.5 rounded-full font-semibold">{selectedItems.length}</span>
+          )}
+        </div>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="px-3 pb-3 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+          {enableSearch && (
+            <input
+              type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              placeholder={`Buscar ${title.toLowerCase()}...`}
+              className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[#BD4234] transition-colors"
+            />
+          )}
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {visibleItems.map(opt => {
+              const isSelected = selectedSet.has(opt.value);
+              return (
+                <label key={opt.value} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-red-50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${isSelected ? 'border-[#BD4234] bg-[#BD4234]' : 'border-slate-300 dark:border-slate-600'}`}>
+                    {isSelected && <CheckCircle2 size={10} className="text-white" />}
+                  </div>
+                  <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{opt.label}</span>
+                    <span className="text-[10px] font-semibold text-slate-400 shrink-0">{opt.count}</span>
+                  </div>
+                  <input type="checkbox" checked={isSelected} onChange={() => onToggle(opt.value)} className="hidden" />
+                </label>
+              );
+            })}
           </div>
-          <ChevronDown
-            size={16}
-            className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-
-        {isOpen && (
-          <div className="px-3 pb-3 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-2">
-            {enableSearch && (
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`Buscar ${title.toLowerCase()}...`}
-                className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[#BD4234] transition-colors"
-              />
-            )}
-
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {visibleItems.map((opt) => {
-                const isSelected = selectedSet.has(opt.value);
-
-                return (
-                  <label
-                    key={opt.value}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                      isSelected ? "bg-red-50 dark:bg-red-900/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                        isSelected ? "border-[#BD4234] bg-[#BD4234]" : "border-slate-300 dark:border-slate-600"
-                      }`}
-                    >
-                      {isSelected && <CheckCircle2 size={10} className="text-white" />}
-                    </div>
-
-                    <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
-                      <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
-                        {opt.label}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400 shrink-0">
-                        {opt.count}
-                      </span>
-                    </div>
-
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggle(opt.value)}
-                      className="hidden"
-                    />
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-);
+        </div>
+      )}
+    </div>
+  );
+});
 
 interface FilterChipGroupProps {
-  title: string;
-  icon: React.ElementType;
-  items: FilterOption[];
-  selectedItems: string[];
-  onToggle: (val: string) => void;
+  title: string; icon: React.ElementType; items: FilterOption[];
+  selectedItems: string[]; onToggle: (val: string) => void;
 }
 
 const FilterChipGroup = React.memo(({ title, icon: Icon, items, selectedItems, onToggle }: FilterChipGroupProps) => {
@@ -272,12 +222,11 @@ const FilterChipGroup = React.memo(({ title, icon: Icon, items, selectedItems, o
         {items.length === 0 ? (
           <span className="text-xs text-slate-400 italic">Nenhuma opção disponível.</span>
         ) : (
-          items.map((opt) => {
+          items.map(opt => {
             const isSelected = selectedSet.has(opt.value);
             return (
               <button
-                key={opt.value}
-                onClick={() => onToggle(opt.value)}
+                key={opt.value} onClick={() => onToggle(opt.value)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 border ${
                   isSelected
                     ? 'bg-red-50 dark:bg-red-900/20 border-[#BD4234] text-[#BD4234] shadow-sm'
@@ -299,105 +248,67 @@ const FilterChipGroup = React.memo(({ title, icon: Icon, items, selectedItems, o
 });
 
 interface SelectDropdownProps {
-  label: string;
-  items: FilterOption[];
-  selectedItems: string[];
-  onToggle: (val: string) => void;
-  placeholder?: string;
-  enableSearch?: boolean;
+  label: string; items: FilterOption[]; selectedItems: string[];
+  onToggle: (val: string) => void; placeholder?: string; enableSearch?: boolean;
 }
 
-const SelectDropdown = React.memo(
-  ({ label, items, selectedItems, onToggle, placeholder, enableSearch }: SelectDropdownProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
+const SelectDropdown = React.memo(({ label, items, selectedItems, onToggle, placeholder, enableSearch }: SelectDropdownProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-    const visibleItems = useMemo(() => {
-      if (!enableSearch || !searchTerm) return items;
-      const s = searchTerm.toLowerCase();
-      return items.filter((opt) => opt.label.toLowerCase().includes(s));
-    }, [items, searchTerm, enableSearch]);
+  const visibleItems = useMemo(() => {
+    if (!enableSearch || !searchTerm) return items;
+    const s = searchTerm.toLowerCase();
+    return items.filter(opt => opt.label.toLowerCase().includes(s));
+  }, [items, searchTerm, enableSearch]);
 
-    const selectedSet = useMemo(() => new Set(selectedItems), [selectedItems]);
+  const selectedSet = useMemo(() => new Set(selectedItems), [selectedItems]);
 
-    return (
-      <div className="relative">
-        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-          {label}
-        </label>
+  return (
+    <div className="relative">
+      <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">{label}</label>
+      <button onClick={() => setIsOpen(v => !v)} className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white hover:border-[#BD4234] transition-colors">
+        <span className="truncate">{selectedItems.length > 0 ? `${selectedItems.length} selecionado(s)` : placeholder}</span>
+        <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-        <button
-          onClick={() => setIsOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white hover:border-[#BD4234] transition-colors"
-        >
-          <span className="truncate">
-            {selectedItems.length > 0 ? `${selectedItems.length} selecionado(s)` : placeholder}
-          </span>
-          <ChevronDown size={14} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
-        </button>
-
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-            <div className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-hidden">
-              {enableSearch && (
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar..."
-                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              )}
-
-              <div className="max-h-52 overflow-y-auto p-1">
-                {visibleItems.map((opt) => {
-                  const isSelected = selectedSet.has(opt.value);
-
-                  return (
-                    <label
-                      key={opt.value}
-                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                        isSelected ? "bg-red-50 dark:bg-red-900/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                      }`}
-                    >
-                      <div
-                        className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                          isSelected ? "border-[#BD4234] bg-[#BD4234]" : "border-slate-300 dark:border-slate-600"
-                        }`}
-                      >
-                        {isSelected && <CheckCircle2 size={10} className="text-white" />}
-                      </div>
-
-                      <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
-                          {opt.label}
-                        </span>
-                        <span className="text-[10px] font-semibold text-slate-400 shrink-0">
-                          {opt.count}
-                        </span>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onToggle(opt.value)}
-                        className="hidden"
-                      />
-                    </label>
-                  );
-                })}
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-hidden">
+            {enableSearch && (
+              <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+                <input
+                  type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Buscar..."
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none"
+                  onClick={e => e.stopPropagation()}
+                />
               </div>
+            )}
+            <div className="max-h-52 overflow-y-auto p-1">
+              {visibleItems.map(opt => {
+                const isSelected = selectedSet.has(opt.value);
+                return (
+                  <label key={opt.value} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-red-50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${isSelected ? 'border-[#BD4234] bg-[#BD4234]' : 'border-slate-300 dark:border-slate-600'}`}>
+                      {isSelected && <CheckCircle2 size={10} className="text-white" />}
+                    </div>
+                    <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{opt.label}</span>
+                      <span className="text-[10px] font-semibold text-slate-400 shrink-0">{opt.count}</span>
+                    </div>
+                    <input type="checkbox" checked={isSelected} onChange={() => onToggle(opt.value)} className="hidden" />
+                  </label>
+                );
+              })}
             </div>
-          </>
-        )}
-      </div>
-    );
-  }
-);
+          </div>
+        </>
+      )}
+    </div>
+  );
+});
 
 interface ToggleChipProps {
   label: string; icon: React.ElementType; isActive: boolean; onClick: () => void; colorClass?: string;
@@ -418,16 +329,10 @@ const ToggleChip = React.memo(({ label, icon: Icon, isActive, onClick, colorClas
 ));
 
 // ─────────────────────────────────────────────
-// HELPERS — Facets (Filtro avançado com opções dinâmicas)
+// HELPERS — Filtro facetado
 // ─────────────────────────────────────────────
 
-type FacetKey =
-  | "categorias"
-  | "origens"
-  | "anos"
-  | "especialidades"
-  | "temas_especificos"
-  | "competencias";
+type FacetKey = 'categorias' | 'origens' | 'anos' | 'especialidades' | 'temas_especificos' | 'competencias';
 
 function normalizeValue(v: unknown): string | null {
   if (v === null || v === undefined) return null;
@@ -437,13 +342,13 @@ function normalizeValue(v: unknown): string | null {
 
 function getFacetValue(q: Question, key: FacetKey): string | null {
   switch (key) {
-    case "categorias":      return normalizeValue(q.categoria);
-    case "origens":         return normalizeValue(q.origem);
-    case "anos":            return normalizeValue(q.ano);
-    case "temas_especificos": return normalizeValue(q.tema_especifico);
-    case "especialidades":  return normalizeValue((q as any).especialidade);
-    case "competencias":    return normalizeValue((q as any).competencias ?? null);
-    default:                return null;
+    case 'categorias':        return normalizeValue(q.categoria);
+    case 'origens':           return normalizeValue(q.origem);
+    case 'anos':              return normalizeValue(q.ano);
+    case 'temas_especificos': return normalizeValue(q.tema_especifico);
+    case 'especialidades':    return normalizeValue((q as Question & { especialidade?: string }).especialidade);
+    case 'competencias':      return normalizeValue((q as Question & { competencias?: string }).competencias ?? null);
+    default:                  return null;
   }
 }
 
@@ -453,70 +358,48 @@ type ApplyFilterContext = {
   correctlyAnsweredIds?: Set<number>;
 };
 
-function applyAllFilters(
-  questionList: Question[],
-  currentFilters: FilterState,
-  ctx: ApplyFilterContext = {}
-): Question[] {
-  const categorias    = (currentFilters.categorias || []) as string[];
-  const temas         = (currentFilters.temas_especificos || []) as string[];
-  const anos          = (currentFilters.anos || []) as string[];
-  const origens       = (currentFilters.origens || []) as string[];
-  const especialidades = ((currentFilters as any).especialidades || []) as string[];
-  const competencias  = ((currentFilters as any).competencias || []) as string[];
-  const searchQueries = (currentFilters.searchQueries || []) as string[];
+function applyAllFilters(questionList: Question[], currentFilters: FilterState, ctx: ApplyFilterContext = {}): Question[] {
+  const categorias     = (currentFilters.categorias || []) as string[];
+  const temas          = (currentFilters.temas_especificos || []) as string[];
+  const anos           = (currentFilters.anos || []) as string[];
+  const origens        = (currentFilters.origens || []) as string[];
+  const especialidades = ((currentFilters as FilterState & { especialidades?: string[] }).especialidades || []) as string[];
+  const competencias   = ((currentFilters as FilterState & { competencias?: string[] }).competencias || []) as string[];
+  const searchQueries  = (currentFilters.searchQueries || []) as string[];
 
-  const categoriasSet    = categorias.length    ? new Set(categorias)    : null;
-  const temasSet         = temas.length         ? new Set(temas)         : null;
-  const anosSet          = anos.length          ? new Set(anos)          : null;
-  const origensSet       = origens.length       ? new Set(origens)       : null;
+  const categoriasSet     = categorias.length     ? new Set(categorias)     : null;
+  const temasSet          = temas.length          ? new Set(temas)          : null;
+  const anosSet           = anos.length           ? new Set(anos)           : null;
+  const origensSet        = origens.length        ? new Set(origens)        : null;
   const especialidadesSet = especialidades.length ? new Set(especialidades) : null;
 
   const competenciasNorm = competencias.length
-    ? new Set(competencias.map((c) => c.trim().toLowerCase()))
+    ? new Set(competencias.map(c => c.trim().toLowerCase()))
     : null;
 
   const searchTerms = searchQueries.length
-    ? searchQueries.map((t) => t.toLowerCase())
+    ? searchQueries.map(t => t.toLowerCase())
     : null;
 
   const { excludeKey, answeredQuestionIds, correctlyAnsweredIds } = ctx;
 
-  return questionList.filter((q) => {
-    if (excludeKey !== "categorias" && categoriasSet) {
-      const v = getFacetValue(q, "categorias");
-      if (!v || !categoriasSet.has(v)) return false;
-    }
-    if (excludeKey !== "origens" && origensSet) {
-      const v = getFacetValue(q, "origens");
-      if (!v || !origensSet.has(v)) return false;
-    }
-    if (excludeKey !== "anos" && anosSet) {
-      const v = getFacetValue(q, "anos");
-      if (!v || !anosSet.has(v)) return false;
-    }
-    if (excludeKey !== "especialidades" && especialidadesSet) {
-      const v = getFacetValue(q, "especialidades");
-      if (!v || !especialidadesSet.has(v)) return false;
-    }
-    if (excludeKey !== "temas_especificos" && temasSet) {
-      const v = getFacetValue(q, "temas_especificos");
-      if (!v || !temasSet.has(v)) return false;
-    }
-    if (excludeKey !== "competencias" && competenciasNorm) {
-      const v = getFacetValue(q, "competencias");
+  return questionList.filter(q => {
+    if (excludeKey !== 'categorias'       && categoriasSet     && !categoriasSet.has(getFacetValue(q, 'categorias') || ''))       return false;
+    if (excludeKey !== 'origens'          && origensSet        && !origensSet.has(getFacetValue(q, 'origens') || ''))             return false;
+    if (excludeKey !== 'anos'             && anosSet           && !anosSet.has(getFacetValue(q, 'anos') || ''))                   return false;
+    if (excludeKey !== 'especialidades'   && especialidadesSet && !especialidadesSet.has(getFacetValue(q, 'especialidades') || '')) return false;
+    if (excludeKey !== 'temas_especificos' && temasSet         && !temasSet.has(getFacetValue(q, 'temas_especificos') || ''))     return false;
+    if (excludeKey !== 'competencias'     && competenciasNorm) {
+      const v = getFacetValue(q, 'competencias');
       if (!v || !competenciasNorm.has(v.trim().toLowerCase())) return false;
     }
     if (searchTerms) {
-      const enunciado = (q.enunciado || "").toLowerCase();
-      const tema = (q.tema_especifico || "").toLowerCase();
-      if (!searchTerms.some((t) => enunciado.includes(t) || tema.includes(t))) return false;
+      const enunciado = (q.enunciado || '').toLowerCase();
+      const tema = (q.tema_especifico || '').toLowerCase();
+      if (!searchTerms.some(t => enunciado.includes(t) || tema.includes(t))) return false;
     }
-    if (answeredQuestionIds && currentFilters.excludeSeen) {
-      if (answeredQuestionIds.has(q.id)) return false;
-    } else if (correctlyAnsweredIds && currentFilters.excludeCorrect) {
-      if (correctlyAnsweredIds.has(q.id)) return false;
-    }
+    if (answeredQuestionIds && currentFilters.excludeSeen && answeredQuestionIds.has(q.id)) return false;
+    if (correctlyAnsweredIds && currentFilters.excludeCorrect && correctlyAnsweredIds.has(q.id)) return false;
 
     return true;
   });
@@ -526,16 +409,8 @@ type FacetBuildContext = ApplyFilterContext & {
   labelMaps?: Partial<Record<FacetKey, Record<string, string>>>;
 };
 
-function buildFacetOptions(
-  questionList: Question[],
-  currentFilters: FilterState,
-  ctx: FacetBuildContext = {}
-) {
-  const keys: FacetKey[] = [
-    "categorias", "especialidades", "temas_especificos",
-    "competencias", "origens", "anos",
-  ];
-
+function buildFacetOptions(questionList: Question[], currentFilters: FilterState, ctx: FacetBuildContext = {}) {
+  const keys: FacetKey[] = ['categorias', 'especialidades', 'temas_especificos', 'competencias', 'origens', 'anos'];
   const labelMaps = ctx.labelMaps || {};
   const getLabel = (key: FacetKey, value: string) => labelMaps[key]?.[value] || value;
 
@@ -557,38 +432,33 @@ function buildFacetOptions(
     for (const q of base) {
       const v = getFacetValue(q, key);
       if (!v) continue;
-      const mapKey = key === "competencias" ? v.trim().toLowerCase() : v;
+      const mapKey = key === 'competencias' ? v.trim().toLowerCase() : v;
       countMap.set(mapKey, (countMap.get(mapKey) || 0) + 1);
-      if (key === "competencias" && !rawLabelMap.has(mapKey)) {
-        rawLabelMap.set(mapKey, v);
-      }
+      if (key === 'competencias' && !rawLabelMap.has(mapKey)) rawLabelMap.set(mapKey, v);
     }
 
-    const selected = (((currentFilters as any)[key] || []) as string[]);
+    const selected = (((currentFilters as Record<string, unknown>)[key] || []) as string[]);
     const universe = new Set<string>(countMap.keys());
+    for (const v of selected) universe.add(key === 'competencias' ? v.trim().toLowerCase() : v);
 
-    for (const v of selected) {
-      universe.add(key === "competencias" ? v.trim().toLowerCase() : v);
-    }
-
-    let options: FilterOption[] = Array.from(universe).map((universeKey) => {
-      if (key === "competencias") {
+    let options: FilterOption[] = Array.from(universe).map(universeKey => {
+      if (key === 'competencias') {
         const originalLabel = rawLabelMap.get(universeKey) || universeKey;
         return { value: originalLabel, label: originalLabel, count: countMap.get(universeKey) || 0 };
       }
       return { value: universeKey, label: getLabel(key, universeKey), count: countMap.get(universeKey) || 0 };
     });
 
-    if (key === "anos") {
+    if (key === 'anos') {
       options.sort((a, b) => (parseInt(b.value, 10) || 0) - (parseInt(a.value, 10) || 0));
-    } else if (key === "competencias") {
+    } else if (key === 'competencias') {
       options.sort((a, b) => {
         const aOrder = COMPETENCIA_PRIORITY_MAP.has(a.value) ? COMPETENCIA_PRIORITY_MAP.get(a.value)! : 999;
         const bOrder = COMPETENCIA_PRIORITY_MAP.has(b.value) ? COMPETENCIA_PRIORITY_MAP.get(b.value)! : 999;
-        return aOrder !== bOrder ? aOrder - bOrder : a.label.localeCompare(b.label, "pt-BR");
+        return aOrder !== bOrder ? aOrder - bOrder : a.label.localeCompare(b.label, 'pt-BR');
       });
     } else {
-      options.sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+      options.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
     }
 
     facets[key] = options;
@@ -600,15 +470,11 @@ function buildFacetOptions(
 function hasAnyActiveFilter(currentFilters: FilterState): boolean {
   if (!currentFilters) return false;
   if (currentFilters.excludeCorrect || currentFilters.excludeSeen) return true;
-  if ((currentFilters as any).onlyWrong) return true;
+  if ((currentFilters as FilterState & { onlyWrong?: boolean }).onlyWrong) return true;
 
-  const arrayKeys = [
-    'categorias', 'temas_especificos', 'anos', 'origens',
-    'searchQueries', 'especialidades', 'competencias',
-  ] as const;
-
+  const arrayKeys = ['categorias', 'temas_especificos', 'anos', 'origens', 'searchQueries', 'especialidades', 'competencias'] as const;
   for (const k of arrayKeys) {
-    if (((currentFilters as any)[k] || []).length > 0) return true;
+    if (((currentFilters as Record<string, unknown>)[k] as string[] || []).length > 0) return true;
   }
   return false;
 }
@@ -616,7 +482,6 @@ function hasAnyActiveFilter(currentFilters: FilterState): boolean {
 // ─────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────────
-
 interface FilterScreenProps {
   questions: Partial<Question>[];
   history?: UserHistoryItem[];
@@ -626,17 +491,22 @@ interface FilterScreenProps {
   filteredCount?: number;
 }
 
+// Tipo estendido para filtros internos que incluem campos opcionais
+type ExtendedFilterState = FilterState & {
+  onlyWrong?: boolean;
+  especialidades?: string[];
+  competencias?: string[];
+};
+
 const FilterScreen: React.FC<FilterScreenProps> = ({
   questions = [],
   history: historyProp = [],
   filters,
   setFilters,
-  onStartQuiz
+  onStartQuiz,
 }) => {
-  // Simulando dados de usuário para a versão local
   const firstName = 'Doutor(a)';
 
-  // -- ESTADOS DA UI --
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('filterTutorialSeen'));
   const [showUpdateWarning, setShowUpdateWarning] = useState(false);
@@ -644,92 +514,70 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
   const [isSmartSelectionEnabled, setIsSmartSelectionEnabled] = useState(false);
   const [keywordSearchText, setKeywordSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
   const [expandedSectionsSet, setExpandedSectionsSet] = useState<Set<string>>(() => new Set());
 
-  // -- SISTEMA DINÂMICO DE BOAS-VINDAS --
-  const [headerText, setHeaderText] = useState({ title: `Olá, {name}`, subtitle: "O que vai estudar hoje?" });
+  const [headerText, setHeaderText] = useState({ title: 'Olá, {name}', subtitle: 'O que vai estudar hoje?' });
 
   useEffect(() => {
     const now = Date.now();
     const hour = new Date().getHours();
-
     const lastVisitTime = parseInt(localStorage.getItem('qb_last_visit_time') || '0', 10);
     const lastVisitDate = localStorage.getItem('qb_last_visit_date');
     let visitsToday = parseInt(localStorage.getItem('qb_daily_visits') || '0', 10);
     const todayStr = new Date().toLocaleDateString('pt-BR');
 
-    if (lastVisitDate !== todayStr) {
-      visitsToday = 1;
-      localStorage.setItem('qb_last_visit_date', todayStr);
-    } else if (now - lastVisitTime > 1000 * 60 * 60) {
-      visitsToday += 1;
-    }
+    if (lastVisitDate !== todayStr) { visitsToday = 1; localStorage.setItem('qb_last_visit_date', todayStr); }
+    else if (now - lastVisitTime > 1000 * 60 * 60) visitsToday += 1;
 
     localStorage.setItem('qb_daily_visits', visitsToday.toString());
     localStorage.setItem('qb_last_visit_time', now.toString());
 
     const daysSinceLastVisit = lastVisitTime ? (now - lastVisitTime) / (1000 * 3600 * 24) : 0;
-
-    let pool: { t: string; s: string }[] = [];
+    let pool: Array<{ t: string; s: string }> = [];
 
     if (daysSinceLastVisit > 3) {
       pool = [
-        { t: "Quanto tempo, {name}!", s: "As questões estavam sentindo sua falta." },
-        { t: "Olha quem apareceu!", s: "Achamos que tinha esquecido da gente, {name}." },
-        { t: "Saudações, {name}!", s: "Vamos tirar a poeira e voltar à ativa?" },
-        { t: "Que bom te ver, {name}!", s: "Bora recuperar o tempo perdido!" },
-        { t: "O bom filho à casa torna!", s: "Sua cadeira de estudos já estava com saudades, {name}." }
+        { t: 'Quanto tempo, {name}!', s: 'As questões estavam sentindo sua falta.' },
+        { t: 'Olha quem apareceu!', s: 'Achamos que tinha esquecido da gente, {name}.' },
+        { t: 'Saudações, {name}!', s: 'Vamos tirar a poeira e voltar à ativa?' },
+        { t: 'Que bom te ver, {name}!', s: 'Bora recuperar o tempo perdido!' },
+        { t: 'O bom filho à casa torna!', s: 'Sua cadeira de estudos já estava com saudades, {name}.' },
       ];
     } else if (visitsToday > 3) {
       pool = [
-        { t: "Você de novo, {name}?", s: "Já vi que alguém quer gabaritar hoje!" },
-        { t: "Ainda por aqui, {name}?", s: "A vaga na residência não vem sozinha, né? Bora!" },
-        { t: "Dose quádrupla, {name}?", s: "O nosso sistema até assustou com tanta dedicação." },
-        { t: "Olha quem voltou!", s: "Descansar é pros fracos, né {name}?" },
-        { t: "Mais uma rodada?", s: "A sua cadeira já deve estar com o seu formato, {name}." },
-        { t: "Sempre alerta, {name}!", s: "A aprovação vem por insistência e exaustão (das questões)!" },
-        { t: "Haja café, hein {name}!", s: "Bora bater mais uma meta antes de fechar o dia." }
+        { t: 'Você de novo, {name}?', s: 'Já vi que alguém quer gabaritar hoje!' },
+        { t: 'Ainda por aqui, {name}?', s: 'A vaga na residência não vem sozinha, né? Bora!' },
+        { t: 'Dose quádrupla, {name}?', s: 'O nosso sistema até assustou com tanta dedicação.' },
+        { t: 'Sempre alerta, {name}!', s: 'A aprovação vem por insistência e exaustão (das questões)!' },
+        { t: 'Haja café, hein {name}!', s: 'Bora bater mais uma meta antes de fechar o dia.' },
       ];
     } else if (hour < 6) {
       pool = [
-        { t: "Olá, coruja noturna!", s: "Trocando o sono pela aprovação, {name}?" },
-        { t: "Ainda acordado(a), {name}?", s: "A concorrência dorme, você estuda." },
-        { t: "Boa madrugada, {name}!", s: "Café ou energético? O que te mantém aqui?" },
-        { t: "Shhh... silêncio.", s: "Estudando na calada da noite, hein {name}?" },
-        { t: "Insônia, {name}?", s: "Já que não tem sono, que tal umas questõezinhas?" },
-        { t: "Firme e forte, {name}!", s: "O R1 do futuro vai agradecer muito por essa madrugada." },
-        { t: "Turno da noite, {name}?", s: "O silêncio é o melhor amigo da concentração." }
+        { t: 'Olá, coruja noturna!', s: 'Trocando o sono pela aprovação, {name}?' },
+        { t: 'Ainda acordado(a), {name}?', s: 'A concorrência dorme, você estuda.' },
+        { t: 'Boa madrugada, {name}!', s: 'Café ou energético? O que te mantém aqui?' },
+        { t: 'Firme e forte, {name}!', s: 'O R1 do futuro vai agradecer muito por essa madrugada.' },
       ];
     } else if (hour < 12) {
       pool = [
-        { t: "Bom dia, {name}!", s: "Já tomou seu café? Bora acordar esses neurônios!" },
-        { t: "O sol raiou, {name}!", s: "E a primeira meta do dia é destruir nas questões." },
-        { t: "Acorda, {name}!", s: "Cheirinho de café e questões fresquinhas esperando." },
-        { t: "Dia lindo, {name}!", s: "Hoje é um ótimo dia para aumentar o seu nível." },
-        { t: "Saudações matinais!", s: "Quem cedo madruga, passa mais rápido, {name}." },
-        { t: "E aí, {name}?", s: "Pronto(a) para o primeiro round de estudos do dia?" },
-        { t: "Bora começar, {name}!", s: "O cérebro tá fresco, hora de aprender assunto novo." }
+        { t: 'Bom dia, {name}!', s: 'Já tomou seu café? Bora acordar esses neurônios!' },
+        { t: 'O sol raiou, {name}!', s: 'E a primeira meta do dia é destruir nas questões.' },
+        { t: 'Dia lindo, {name}!', s: 'Hoje é um ótimo dia para aumentar o seu nível.' },
+        { t: 'E aí, {name}?', s: 'Pronto(a) para o primeiro round de estudos do dia?' },
       ];
     } else if (hour < 18) {
       pool = [
-        { t: "Boa tarde, {name}!", s: "Batendo aquele sono pós-almoço? Uma questão acorda!" },
-        { t: "E aí, {name}?", s: "Metade do dia já foi. Como estão as metas?" },
-        { t: "Tarde boa, {name}!", s: "A digestão fica muito melhor resolvendo uns simulados." },
-        { t: "Firme na luta, {name}?", s: "A tarde promete. Vamos buscar essa aprovação!" },
-        { t: "Olá, {name}!", s: "Mais um turno de estudos começando. Prepara o foco." },
-        { t: "Salve, {name}!", s: "Bora combater a preguiça da tarde quebrando recordes." },
-        { t: "Pausa pro café, {name}?", s: "Pega a xícara e vem fazer umas questões." }
+        { t: 'Boa tarde, {name}!', s: 'Batendo aquele sono pós-almoço? Uma questão acorda!' },
+        { t: 'E aí, {name}?', s: 'Metade do dia já foi. Como estão as metas?' },
+        { t: 'Firme na luta, {name}?', s: 'A tarde promete. Vamos buscar essa aprovação!' },
+        { t: 'Salve, {name}!', s: 'Bora combater a preguiça da tarde quebrando recordes.' },
       ];
     } else {
       pool = [
-        { t: "Boa noite, {name}!", s: "O dia tá acabando, mas a vontade de passar não." },
-        { t: "Ainda com energia?", s: "O último gás do dia para bater a meta, {name}!" },
-        { t: "Boa noite!", s: "Fechando o dia com chave de ouro nas questões, {name}." },
-        { t: "E aí, {name}?", s: "Hora da revisão noturna. Concentração total!" },
-        { t: "No plantão, {name}?", s: "Que tal umas questões antes de fechar a conta de hoje?" },
-        { t: "Saudações, {name}!", s: "O jantar pode esperar mais umas 10 questõezinhas." },
-        { t: "Reta final, {name}!", s: "Último esforço antes de colocar a cabeça no travesseiro." }
+        { t: 'Boa noite, {name}!', s: 'O dia tá acabando, mas a vontade de passar não.' },
+        { t: 'Ainda com energia?', s: 'O último gás do dia para bater a meta, {name}!' },
+        { t: 'E aí, {name}?', s: 'Hora da revisão noturna. Concentração total!' },
+        { t: 'Reta final, {name}!', s: 'Último esforço antes de colocar a cabeça no travesseiro.' },
       ];
     }
 
@@ -748,40 +596,33 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
     );
   }, [firstName]);
 
-  // -- ESTADOS DO HISTÓRICO E SIMULADOS SALVOS --
   const [recentExamHistory, setRecentExamHistory] = useState<QuizSession[]>([]);
   const [savedSimulations, setSavedSimulations] = useState<QuizSession[]>([]);
   const [copiedFiltersFromSession, setCopiedFiltersFromSession] = useState<FilterState | null>(null);
-
-  // -- ESTADOS DO MODAL DE SALVAR --
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [sessionIdBeingSaved, setSessionIdBeingSaved] = useState<string | null>(null);
   const [saveSimulationName, setSaveSimulationName] = useState('');
 
-  // ─────────────────────────────────────────────
-  // CARREGAMENTO DE DADOS (Histórico e Sessões)
-  // ─────────────────────────────────────────────
   const [localHistory, setLocalHistory] = useState<UserHistoryItem[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isLoadingHistory] = useState(false);
 
   useEffect(() => {
-    if (historyProp && historyProp.length > 0) {
-      setLocalHistory(historyProp);
-    }
+    if (historyProp && historyProp.length > 0) setLocalHistory(historyProp);
   }, [historyProp]);
 
-  const history = localHistory.length > 0 ? localHistory : historyProp;
+  // FIX: history derivado em useMemo para evitar referência nova a cada render
+  const history = useMemo(
+    () => localHistory.length > 0 ? localHistory : historyProp,
+    [localHistory, historyProp]
+  );
 
-  // Carrega sessões do localStorage
   useEffect(() => {
     const allSessions = getQuizSessions();
     setRecentExamHistory(allSessions.filter(s => !s.is_saved).sort((a, b) => b.created_at - a.created_at).slice(0, 30));
     setSavedSimulations(allSessions.filter(s => s.is_saved).sort((a, b) => b.created_at - a.created_at));
   }, []);
 
-  // ─────────────────────────────────────────────
-  // LÓGICA DE DIFICULDADE (Smart Selection)
-  // ─────────────────────────────────────────────
+  // ─── Seleção Inteligente ───
   const [knowledgeTree, setKnowledgeTree] = useState<Map<string, KnowledgeNode>>(new Map());
   const [isDifficultyDataReady, setIsDifficultyDataReady] = useState(false);
   const [isLoadingDifficulty, setIsLoadingDifficulty] = useState(false);
@@ -794,15 +635,18 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
     }
     const now = Date.now();
     const tree = new Map<string, KnowledgeNode>();
+
     for (const item of history) {
       const wasCorrect = item.isCorrect ? 1 : 0;
       const answeredAt = item.timestamp || now;
       const rawCategory = item.category || 'Geral';
-      const normalizedCategory = CATEGORY_NAMES_INTERNAL[rawCategory] || rawCategory;
+      // FIX: usa GRANDES_AREAS_MAP diretamente (alias CATEGORY_NAMES_INTERNAL removido)
+      const normalizedCategory = GRANDES_AREAS_MAP[rawCategory] || rawCategory;
       const especialidade = item.especialidade || 'Geral';
       const tema = item.tema_especifico || 'Geral';
       const competencia = item.competencia || 'Geral';
       const nodeKey = `${normalizedCategory}::${especialidade}::${tema}::${competencia}`;
+
       let node = tree.get(nodeKey);
       if (!node) {
         node = { categoria: normalizedCategory, especialidade, tema, competencia, total: 0, correct: 0, accuracy: 0, recency: answeredAt, urgency: 0 };
@@ -812,50 +656,49 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
       if (wasCorrect) node.correct++;
       if (answeredAt > node.recency) node.recency = answeredAt;
     }
-    tree.forEach((node) => {
+
+    tree.forEach(node => {
       if (node.total < 1) return;
       const rawAccuracy = node.correct / node.total;
       node.accuracy = Math.round(rawAccuracy * 100);
       const daysSinceLastAnswer = (now - node.recency) / (1000 * 60 * 60 * 24);
       node.urgency = ((1 - rawAccuracy) * Math.log(node.total + 1)) + (daysSinceLastAnswer * 0.05);
     });
+
     setKnowledgeTree(tree);
     setIsDifficultyDataReady(true);
   }, [history]);
 
-  // ─────────────────────────────────────────────
-  // FILTRAGEM (Facetada + cache de "Meus Erros")
-  // ─────────────────────────────────────────────
+  // ─── IDs filtrados ───
   const answeredQuestionIds = useMemo(
-    () => new Set((history || []).map((h) => h.questionId)),
+    () => new Set((history || []).map(h => h.questionId)),
     [history]
   );
   const correctlyAnsweredIds = useMemo(
-    () => new Set((history || []).filter((h) => h.isCorrect).map((h) => h.questionId)),
+    () => new Set((history || []).filter(h => h.isCorrect).map(h => h.questionId)),
     [history]
   );
 
-  // Filtro puramente local para "Meus Erros"
   const [mistakeQuestions, setMistakeQuestions] = useState<Question[] | null>(null);
   const [isLoadingMistakes, setIsLoadingMistakes] = useState(false);
 
   useEffect(() => {
-    if ((filters as any).onlyWrong) {
+    const extFilters = filters as ExtendedFilterState;
+    if (extFilters.onlyWrong) {
       setIsLoadingMistakes(true);
       const mistookIds = new Set((history || []).filter(h => !h.isCorrect).map(h => h.questionId));
       const onlyWrongIds = [...mistookIds].filter(id => !correctlyAnsweredIds.has(id));
-      const mistakes = questions.filter(q => q.id && onlyWrongIds.includes(q.id)) as Question[];
-      setMistakeQuestions(mistakes);
+      setMistakeQuestions((questions as Question[]).filter(q => q.id && onlyWrongIds.includes(q.id)));
       setIsLoadingMistakes(false);
     } else {
       setMistakeQuestions(null);
     }
-  }, [(filters as any).onlyWrong, history, correctlyAnsweredIds, questions]);
+  }, [(filters as ExtendedFilterState).onlyWrong, history, correctlyAnsweredIds, questions]);
 
-  const questionPool: Question[] = useMemo(() => {
-    if ((filters as any).onlyWrong) return mistakeQuestions || [];
-    return (questions as Question[]) || [];
-  }, [(filters as any).onlyWrong, mistakeQuestions, questions]);
+  const questionPool: Question[] = useMemo(
+    () => (filters as ExtendedFilterState).onlyWrong ? (mistakeQuestions || []) : (questions as Question[]),
+    [(filters as ExtendedFilterState).onlyWrong, mistakeQuestions, questions]
+  );
 
   const hasHistory = history && history.length > 0;
   const filterCtxBase: ApplyFilterContext = useMemo(() => ({
@@ -863,34 +706,25 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
     correctlyAnsweredIds: hasHistory ? correctlyAnsweredIds : undefined,
   }), [hasHistory, answeredQuestionIds, correctlyAnsweredIds]);
 
-  const facetOptions = useMemo(() => {
-    return buildFacetOptions(questionPool, filters, {
-      ...filterCtxBase,
-      labelMaps: { categorias: GRANDES_AREAS_MAP },
-    });
-  }, [questionPool, filters, filterCtxBase]);
+  const facetOptions = useMemo(
+    () => buildFacetOptions(questionPool, filters, { ...filterCtxBase, labelMaps: { categorias: GRANDES_AREAS_MAP } }),
+    [questionPool, filters, filterCtxBase]
+  );
 
-  const filteredQuestions = useMemo(() => {
-    return applyAllFilters(questionPool, filters, filterCtxBase);
-  }, [questionPool, filters, filterCtxBase]);
+  const filteredQuestions = useMemo(
+    () => applyAllFilters(questionPool, filters, filterCtxBase),
+    [questionPool, filters, filterCtxBase]
+  );
 
   const displayCount = filteredQuestions.length;
-  const isComputingCount = ((filters as any).onlyWrong && isLoadingMistakes) || false;
+  const isComputingCount = (filters as ExtendedFilterState).onlyWrong && isLoadingMistakes;
 
-  const grandesAreas = facetOptions.categorias;
-  const anos        = facetOptions.anos;
-  const especialidades = facetOptions.especialidades;
-  const temas       = facetOptions.temas_especificos;
-  const competencias = facetOptions.competencias;
-  const bancas      = facetOptions.origens;
+  const { categorias: grandesAreas, anos, especialidades, temas_especificos: temas, competencias, origens: bancas } = facetOptions;
   const maxQuestionLimit = Math.min(250, displayCount);
 
   useEffect(() => { setShowUpdateWarning(questions.length === 0); }, [questions]);
 
-  // ─────────────────────────────────────────────
-  // AÇÕES DO HISTÓRICO DE PROVAS
-  // ─────────────────────────────────────────────
-
+  // ─── Ações ───
   const handleRetakeSession = useCallback((session: QuizSession) => {
     onStartQuiz(session.total_questions, false, true, session.question_ids);
   }, [onStartQuiz]);
@@ -911,12 +745,10 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
 
   const handleConfirmSave = useCallback(() => {
     if (!sessionIdBeingSaved || !saveSimulationName.trim()) return;
-    
     const sessionToSave = recentExamHistory.find(s => s.id === sessionIdBeingSaved);
     if (sessionToSave) {
       const updatedSession = { ...sessionToSave, title: saveSimulationName, is_saved: true };
       saveQuizSessionLocal(updatedSession);
-      
       setRecentExamHistory(prev => prev.filter(s => s.id !== sessionIdBeingSaved));
       setSavedSimulations(prev => [updatedSession, ...prev]);
     }
@@ -924,28 +756,17 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
   }, [sessionIdBeingSaved, saveSimulationName, recentExamHistory]);
 
   const handleDeleteSavedSimulation = useCallback((sessionId: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este simulado salvo?")) return;
+    if (!window.confirm('Tem certeza que deseja excluir este simulado salvo?')) return;
     deleteQuizSessionLocal(sessionId);
     setSavedSimulations(prev => prev.filter(s => s.id !== sessionId));
   }, []);
 
-  const handleOpenConfigModal = useCallback(() => setShowConfigModal(true), []);
-
-  // ─────────────────────────────────────────────
-  // SELEÇÃO INTELIGENTE — Maps pré-calculados de urgência
-  // ─────────────────────────────────────────────
-
+  // ─── Seleção Inteligente — urgency maps ───
   const urgencyMaps = useMemo(() => {
-    const maps = {
-      tema: new Map<string, number>(),
-      especialidade: new Map<string, number>(),
-      competencia: new Map<string, number>(),
-      categoria: new Map<string, number>(),
-    };
-
+    const maps = { tema: new Map<string, number>(), especialidade: new Map<string, number>(), competencia: new Map<string, number>(), categoria: new Map<string, number>() };
     if (knowledgeTree.size === 0) return maps;
 
-    knowledgeTree.forEach((node) => {
+    knowledgeTree.forEach(node => {
       if (node.tema !== 'Geral') {
         const prev = maps.tema.get(node.tema) || 0;
         const score = node.urgency * 3.0;
@@ -957,9 +778,7 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
         if (score > prev) maps.especialidade.set(node.especialidade, score);
       }
       if (node.competencia !== 'Geral') {
-        const priorityIndex = COMPETENCIA_PRIORITY_MAP.has(node.competencia)
-          ? COMPETENCIA_PRIORITY_MAP.get(node.competencia)!
-          : -1;
+        const priorityIndex = COMPETENCIA_PRIORITY_MAP.has(node.competencia) ? COMPETENCIA_PRIORITY_MAP.get(node.competencia)! : -1;
         const priorityBoost = priorityIndex >= 0 ? (COMPETENCIA_PRIORITY.length - priorityIndex) * 0.3 : 0;
         const prev = maps.competencia.get(node.competencia) || 0;
         const score = node.urgency * (1.5 + priorityBoost);
@@ -976,20 +795,17 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
   }, [knowledgeTree]);
 
   const filteredQuestionsWithScore = useMemo(() => {
-    if (knowledgeTree.size === 0) {
-      return filteredQuestions.map(q => ({ id: q.id, urgency: 0 }));
-    }
+    if (knowledgeTree.size === 0) return filteredQuestions.map(q => ({ id: q.id, urgency: 0 }));
     return filteredQuestions.map(q => {
       const rawCategory = q.categoria || 'Geral';
-      const normalizedCategory = CATEGORY_NAMES_INTERNAL[rawCategory] || rawCategory;
-      const especialidade = (q as any).especialidade || 'Geral';
+      const normalizedCategory = GRANDES_AREAS_MAP[rawCategory] || rawCategory;
+      const especialidade = (q as Question & { especialidade?: string }).especialidade || 'Geral';
       const tema = q.tema_especifico || 'Geral';
-      const competencia = (q as any).competencias || 'Geral';
+      const competencia = (q as Question & { competencias?: string }).competencias || 'Geral';
 
       let score = 0;
       const exactMatch = knowledgeTree.get(`${normalizedCategory}::${especialidade}::${tema}::${competencia}`);
       if (exactMatch) score = Math.max(score, exactMatch.urgency * 4.0);
-
       score = Math.max(score, urgencyMaps.tema.get(tema) || 0);
       score = Math.max(score, urgencyMaps.especialidade.get(especialidade) || 0);
       score = Math.max(score, urgencyMaps.competencia.get(competencia) || 0);
@@ -1009,15 +825,14 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
     return sorted.slice(0, chosenLimit).map(s => s.id as number);
   }, [filteredQuestionsWithScore]);
 
-  const hasEnoughDataForSmartSelection = useMemo(() => {
-    if (!history || !Array.isArray(history)) return false;
-    return isDifficultyDataReady && knowledgeTree.size > 0 && history.length >= 10;
-  }, [isDifficultyDataReady, knowledgeTree.size, history]);
+  const hasEnoughDataForSmartSelection = useMemo(
+    () => isDifficultyDataReady && knowledgeTree.size > 0 && (history?.length || 0) >= 10,
+    [isDifficultyDataReady, knowledgeTree.size, history]
+  );
 
   const handleStartQuiz = useCallback(() => {
     if (isSmartSelectionEnabled && hasEnoughDataForSmartSelection) {
-      const sortedIds = buildSmartSortedIds(questionLimit);
-      onStartQuiz(questionLimit, false, true, sortedIds);
+      onStartQuiz(questionLimit, false, true, buildSmartSortedIds(questionLimit));
     } else {
       onStartQuiz(questionLimit, true, false);
     }
@@ -1034,9 +849,9 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
 
   const toggleFilter = useCallback((filterKey: string, filterValue: string) => {
     setFilters(prev => {
-      const currentList = (prev as any)[filterKey] || [];
+      const currentList = ((prev as Record<string, unknown>)[filterKey] as string[]) || [];
       const updatedList = currentList.includes(filterValue)
-        ? currentList.filter((x: string) => x !== filterValue)
+        ? currentList.filter(x => x !== filterValue)
         : [...currentList, filterValue];
       return { ...prev, [filterKey]: updatedList };
     });
@@ -1045,25 +860,25 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
   const handleAddSearchKeyword = useCallback(() => {
     if (!keywordSearchText.trim()) return;
     const keyword = keywordSearchText.trim();
-    const existingKeywords = filters?.searchQueries || [];
+    // FIX: removido optional chaining desnecessário — filters sempre definido
+    const existingKeywords = filters.searchQueries || [];
     if (!existingKeywords.includes(keyword)) {
-      setFilters(prev => ({ ...prev, searchQueries: [...(prev?.searchQueries || []), keyword] }));
+      setFilters(prev => ({ ...prev, searchQueries: [...(prev.searchQueries || []), keyword] }));
     }
     setKeywordSearchText('');
-  }, [keywordSearchText, filters, setFilters]);
+  }, [keywordSearchText, filters.searchQueries, setFilters]);
 
   const handleRemoveSearchKeyword = useCallback((keyword: string) => {
-    setFilters(prev => ({ ...prev, searchQueries: (prev?.searchQueries || []).filter(t => t !== keyword) }));
+    setFilters(prev => ({ ...prev, searchQueries: (prev.searchQueries || []).filter(t => t !== keyword) }));
   }, [setFilters]);
 
-  const clearAllFilters = useCallback(
-    () => setFilters({
+  const clearAllFilters = useCallback(() => {
+    setFilters({
       categorias: [], temas_especificos: [], anos: [], origens: [],
       searchQueries: [], excludeCorrect: false, excludeSeen: false,
       onlyWrong: false, especialidades: [], competencias: [],
-    } as any),
-    [setFilters]
-  );
+    } as ExtendedFilterState);
+  }, [setFilters]);
 
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false);
@@ -1088,12 +903,12 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans">
-      {/* TUTORIAL MODAL */}
+      {/* TUTORIAL */}
       {showTutorial && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" style={{ animation: 'fadeIn 0.2s ease' }}>
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden" style={{ animation: 'scaleIn 0.25s ease' }}>
             <div className="bg-[#BD4234] p-6 text-white">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-80 mb-3"><Info size={12} /> Guia rápido</div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-80 mb-3"><Filter size={12} /> Guia rápido</div>
               <h2 className="text-xl font-bold leading-snug">Como montar seu simulado</h2>
               <p className="text-red-100 text-sm mt-2 leading-relaxed">Personalize sua experiência de estudo utilizando os filtros abaixo e foque no que importa.</p>
             </div>
@@ -1112,7 +927,7 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
       {showUpdateWarning && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" style={{ animation: 'fadeIn 0.2s ease' }}>
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl max-w-sm w-full text-center shadow-xl border border-slate-200 dark:border-slate-800">
-            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 rounded-lg flex items-center justify-center mx-auto mb-4"><RefreshCw size={24} /></div>
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 rounded-lg flex items-center justify-center mx-auto mb-4"><Filter size={24} /></div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Atualização Necessária</h3>
             <p className="text-slate-500 text-sm mb-5">Nova versão do banco de questões detectada ou dados não carregados. Atualize a página.</p>
             <button onClick={() => window.location.reload()} className="w-full py-2.5 bg-[#BD4234] text-white rounded-lg font-semibold text-sm hover:bg-[#a63a2e] transition-colors">Atualizar Página</button>
@@ -1120,16 +935,14 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
         </div>
       )}
 
-      {/* MODAL SALVAR SIMULADO */}
+      {/* MODAL SALVAR */}
       {showSaveModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Nomear Simulado</h3>
             <input
-              autoFocus
-              type="text"
-              value={saveSimulationName}
-              onChange={(e) => setSaveSimulationName(e.target.value)}
+              autoFocus type="text" value={saveSimulationName}
+              onChange={e => setSaveSimulationName(e.target.value)}
               placeholder="Ex: Revisão Cardiologia"
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-[#BD4234] mb-4 text-slate-900 dark:text-white"
             />
@@ -1141,19 +954,14 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
         </div>
       )}
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEÚDO */}
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-32" style={{ animation: 'slideUp 0.4s ease' }}>
-
-        {/* LOGO E PLANO - Modificado para remover ApexLogo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2.5 mb-2">
-            <span className="text-xl font-extrabold text-[#BD4234] tracking-tight">
-              Plataforma de Questões
-            </span>
+            <span className="text-xl font-extrabold text-[#BD4234] tracking-tight">Plataforma de Questões</span>
           </div>
         </div>
 
-        {/* HEADER */}
         <div className="text-center mb-6 min-h-[100px] flex flex-col justify-end animate-in fade-in duration-500">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {renderTextWithName(headerText.title)}
@@ -1166,33 +974,45 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
         <div className="mt-4 mb-6"><PromoBannerCarousel /></div>
 
         <div className="mt-6 space-y-3">
-          {/* BOTÃO COLAR FILTRO */}
           {copiedFiltersFromSession && (
-            <button
-              onClick={handlePasteFilters}
-              className="w-full flex items-center justify-center gap-2 py-2 mb-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg font-medium text-sm animate-pulse hover:animate-none transition-all"
-            >
+            <button onClick={handlePasteFilters} className="w-full flex items-center justify-center gap-2 py-2 mb-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg font-medium text-sm animate-pulse hover:animate-none transition-all">
               <Clipboard size={16} /> Colar filtros copiados
             </button>
           )}
 
-          {/* FILTROS RÁPIDOS */}
           <div className="grid grid-cols-2 gap-2">
-            <ToggleChip label="Inéditas" icon={CheckCircle2} isActive={!!filters.excludeSeen} onClick={() => setFilters(p => ({ ...p, excludeSeen: !p.excludeSeen, excludeCorrect: false, onlyWrong: false }))} colorClass="bg-emerald-600" />
-            <ToggleChip label="Meus Erros" icon={EyeOff} isActive={!!filters.onlyWrong} onClick={() => setFilters(p => { const isActivating = !p.onlyWrong; return isActivating ? { ...p, onlyWrong: true, excludeSeen: false, excludeCorrect: false } : { ...p, onlyWrong: false, excludeCorrect: false }; })} colorClass="bg-[#BD4234]" />
+            <ToggleChip label="Inéditas" icon={CheckCircle2} isActive={!!filters.excludeSeen}
+              onClick={() => setFilters(p => ({ ...p, excludeSeen: !p.excludeSeen, excludeCorrect: false, onlyWrong: false }))}
+              colorClass="bg-emerald-600" />
+            <ToggleChip label="Meus Erros" icon={EyeOff} isActive={!!(filters as ExtendedFilterState).onlyWrong}
+              onClick={() => setFilters(p => {
+                const ext = p as ExtendedFilterState;
+                return ext.onlyWrong
+                  ? { ...p, onlyWrong: false, excludeCorrect: false }
+                  : { ...p, onlyWrong: true, excludeSeen: false, excludeCorrect: false };
+              })}
+              colorClass="bg-[#BD4234]" />
           </div>
 
-          {/* BUSCA POR PALAVRA-CHAVE */}
+          {/* BUSCA */}
           <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Procurar por</label>
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" value={keywordSearchText} onChange={(e) => setKeywordSearchText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddSearchKeyword()} placeholder="Digite um trecho da questão ou tema..." className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 pl-9 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#BD4234] focus:ring-1 focus:ring-[#BD4234]/30 transition-all" />
-              <button onClick={handleAddSearchKeyword} disabled={!keywordSearchText.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-[#BD4234] text-white rounded-md hover:bg-[#a63a2e] disabled:opacity-40 transition-all"><Plus size={14} /></button>
+              <input
+                type="text" value={keywordSearchText}
+                onChange={e => setKeywordSearchText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddSearchKeyword()}
+                placeholder="Digite um trecho da questão ou tema..."
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 pl-9 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#BD4234] focus:ring-1 focus:ring-[#BD4234]/30 transition-all"
+              />
+              <button onClick={handleAddSearchKeyword} disabled={!keywordSearchText.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-[#BD4234] text-white rounded-md hover:bg-[#a63a2e] disabled:opacity-40 transition-all">
+                <Plus size={14} />
+              </button>
             </div>
-            {(filters?.searchQueries || []).length > 0 && (
+            {(filters.searchQueries || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {(filters?.searchQueries || []).map(tag => (
+                {(filters.searchQueries || []).map(tag => (
                   <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/20 text-[#BD4234] text-xs font-medium border border-red-100 dark:border-red-800/40">
                     {tag} <button onClick={() => handleRemoveSearchKeyword(tag)} className="hover:text-red-700 transition-colors"><X size={12} /></button>
                   </span>
@@ -1201,38 +1021,46 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
             )}
           </div>
 
-          {/* DROPDOWNS DE FILTROS PRINCIPAIS */}
+          {/* DROPDOWNS */}
           <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-            <SelectDropdown label="Disciplina (Grande Área)" items={grandesAreas} selectedItems={filters?.categorias || []} onToggle={(v) => toggleFilter('categorias', v)} placeholder="Todas as disciplinas" />
-            <SelectDropdown label="Instituição / Banca" items={bancas} selectedItems={filters?.origens || []} onToggle={(v) => toggleFilter('origens', v)} placeholder="Todas as instituições" enableSearch />
-            <SelectDropdown label="Ano" items={anos} selectedItems={filters?.anos || []} onToggle={(v) => toggleFilter('anos', v)} placeholder="Todos os anos" />
-            <SelectDropdown label="Especialidade" items={especialidades} selectedItems={(filters as any)?.especialidades || []} onToggle={(v) => toggleFilter('especialidades', v)} placeholder="Todas as especialidades" enableSearch />
+            <SelectDropdown label="Disciplina (Grande Área)" items={grandesAreas} selectedItems={filters.categorias || []} onToggle={v => toggleFilter('categorias', v)} placeholder="Todas as disciplinas" />
+            <SelectDropdown label="Instituição / Banca" items={bancas} selectedItems={filters.origens || []} onToggle={v => toggleFilter('origens', v)} placeholder="Todas as instituições" enableSearch />
+            <SelectDropdown label="Ano" items={anos} selectedItems={filters.anos || []} onToggle={v => toggleFilter('anos', v)} placeholder="Todos os anos" />
+            <SelectDropdown label="Especialidade" items={especialidades} selectedItems={(filters as ExtendedFilterState).especialidades || []} onToggle={v => toggleFilter('especialidades', v)} placeholder="Todas as especialidades" enableSearch />
           </div>
 
-          {/* BOTÃO FILTROS AVANÇADOS */}
-          <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-all duration-200 ${showAdvancedFilters ? 'bg-red-50/50 dark:bg-red-900/10 border-[#BD4234]/30 text-[#BD4234]' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
-            <div className="flex items-center gap-2"><Filter size={16} /><span>Filtros avançados</span>{(((filters as any)?.competencias?.length || 0) + ((filters?.temas_especificos || []).length)) > 0 && (<span className="text-xs bg-[#BD4234] text-white px-1.5 py-0.5 rounded-full font-semibold">{((filters as any)?.competencias?.length || 0) + ((filters?.temas_especificos || []).length)}</span>)}</div><ChevronDown size={16} className={`transition-transform duration-200 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+          {/* FILTROS AVANÇADOS */}
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-all duration-200 ${showAdvancedFilters ? 'bg-red-50/50 dark:bg-red-900/10 border-[#BD4234]/30 text-[#BD4234]' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}
+          >
+            <div className="flex items-center gap-2">
+              <Filter size={16} />
+              <span>Filtros avançados</span>
+              {(((filters as ExtendedFilterState).competencias?.length || 0) + (filters.temas_especificos?.length || 0)) > 0 && (
+                <span className="text-xs bg-[#BD4234] text-white px-1.5 py-0.5 rounded-full font-semibold">
+                  {((filters as ExtendedFilterState).competencias?.length || 0) + (filters.temas_especificos?.length || 0)}
+                </span>
+              )}
+            </div>
+            <ChevronDown size={16} className={`transition-transform duration-200 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* PAINEL DE FILTROS AVANÇADOS (colapsável) */}
           <div className={`transition-all duration-300 ease-out overflow-hidden ${showAdvancedFilters ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}>
             <div className="space-y-3 pt-3">
-              <FilterChipGroup title="Competências" icon={Brain} items={competencias} selectedItems={(filters as any)?.competencias || []} onToggle={(v) => toggleFilter('competencias', v)} />
-              <FilterSection title="Grandes Áreas" icon={BookMarked} items={grandesAreas} selectedItems={filters?.categorias || []} onToggle={(v) => toggleFilter('categorias', v)} isOpen={expandedSectionsSet.has('grandes-areas')} onToggleOpen={() => handleToggleSection('grandes-areas')} enableSearch />
-              <FilterSection title="Especialidades" icon={Stethoscope} items={especialidades} selectedItems={(filters as any)?.especialidades || []} onToggle={(v) => toggleFilter('especialidades', v)} isOpen={expandedSectionsSet.has('especialidades')} onToggleOpen={() => handleToggleSection('especialidades')} enableSearch />
-              <FilterSection title="Temas Específicos" icon={BookOpen} items={temas} selectedItems={filters?.temas_especificos || []} onToggle={(v) => toggleFilter('temas_especificos', v)} isOpen={expandedSectionsSet.has('temas')} onToggleOpen={() => handleToggleSection('temas')} enableSearch />
-              <FilterSection title="Bancas" icon={Building2} items={bancas} selectedItems={filters?.origens || []} onToggle={(v) => toggleFilter('origens', v)} isOpen={expandedSectionsSet.has('bancas')} onToggleOpen={() => handleToggleSection('bancas')} enableSearch />
-              <FilterSection title="Anos" icon={Calendar} items={anos} selectedItems={filters?.anos || []} onToggle={(v) => toggleFilter('anos', v)} isOpen={expandedSectionsSet.has('anos')} onToggleOpen={() => handleToggleSection('anos')} enableSearch />
+              <FilterChipGroup title="Competências" icon={Brain} items={competencias} selectedItems={(filters as ExtendedFilterState).competencias || []} onToggle={v => toggleFilter('competencias', v)} />
+              <FilterSection title="Grandes Áreas" icon={BookMarked} items={grandesAreas} selectedItems={filters.categorias || []} onToggle={v => toggleFilter('categorias', v)} isOpen={expandedSectionsSet.has('grandes-areas')} onToggleOpen={() => handleToggleSection('grandes-areas')} enableSearch />
+              <FilterSection title="Especialidades" icon={Stethoscope} items={especialidades} selectedItems={(filters as ExtendedFilterState).especialidades || []} onToggle={v => toggleFilter('especialidades', v)} isOpen={expandedSectionsSet.has('especialidades')} onToggleOpen={() => handleToggleSection('especialidades')} enableSearch />
+              <FilterSection title="Temas Específicos" icon={BookOpen} items={temas} selectedItems={filters.temas_especificos || []} onToggle={v => toggleFilter('temas_especificos', v)} isOpen={expandedSectionsSet.has('temas')} onToggleOpen={() => handleToggleSection('temas')} enableSearch />
+              <FilterSection title="Bancas" icon={Building2} items={bancas} selectedItems={filters.origens || []} onToggle={v => toggleFilter('origens', v)} isOpen={expandedSectionsSet.has('bancas')} onToggleOpen={() => handleToggleSection('bancas')} enableSearch />
+              <FilterSection title="Anos" icon={Calendar} items={anos} selectedItems={filters.anos || []} onToggle={v => toggleFilter('anos', v)} isOpen={expandedSectionsSet.has('anos')} onToggleOpen={() => handleToggleSection('anos')} enableSearch />
             </div>
           </div>
 
-          {/* HISTÓRICO DE PROVAS */}
+          {/* HISTÓRICO */}
           <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden mt-3">
             <button onClick={() => handleToggleSection('history')} className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div className="flex items-center gap-2">
-                <History size={16} className="text-slate-400" />
-                <span className="font-medium text-sm text-slate-700 dark:text-slate-300">Histórico de Provas</span>
-              </div>
+              <div className="flex items-center gap-2"><History size={16} className="text-slate-400" /><span className="font-medium text-sm text-slate-700 dark:text-slate-300">Histórico de Provas</span></div>
               <ChevronDown size={16} className={`text-slate-400 transition-transform ${expandedSectionsSet.has('history') ? 'rotate-180' : ''}`} />
             </button>
             {expandedSectionsSet.has('history') && (
@@ -1309,24 +1137,31 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
             )}
           </div>
 
-          {/* AÇÕES FINAIS */}
+          {/* AÇÕES */}
           <div className="space-y-2 pt-2">
             {hasActiveFilters && (
               <button onClick={clearAllFilters} className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-800 transition-all bg-white dark:bg-slate-900">
                 <Trash2 size={14} /> Limpar filtros
               </button>
             )}
-            <button onClick={handleOpenConfigModal} disabled={displayCount === 0 || isComputingCount || (!!filters.excludeSeen && isLoadingHistory)} className="w-full flex items-center justify-center gap-2 py-3 bg-[#BD4234] text-white rounded-lg font-semibold text-sm shadow-sm hover:bg-[#a63a2e] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-              {(isComputingCount || (!!filters.excludeSeen && isLoadingHistory)) ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            <button
+              onClick={() => setShowConfigModal(true)}
+              disabled={displayCount === 0 || !!isComputingCount || (!!filters.excludeSeen && isLoadingHistory)}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#BD4234] text-white rounded-lg font-semibold text-sm shadow-sm hover:bg-[#a63a2e] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {(isComputingCount || (filters.excludeSeen && isLoadingHistory)) ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
               <span>
-                {(!!filters.excludeSeen && isLoadingHistory) ? 'Carregando histórico...' : isComputingCount ? 'Calculando...' : displayCount === 0 ? 'Nenhuma questão encontrada' : `Iniciar com ${displayCount} questões`}
+                {(filters.excludeSeen && isLoadingHistory) ? 'Carregando histórico...' :
+                  isComputingCount ? 'Calculando...' :
+                  displayCount === 0 ? 'Nenhuma questão encontrada' :
+                  `Iniciar com ${displayCount} questões`}
               </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* MODAL DE CONFIGURAÇÃO (quantidade + seleção inteligente) */}
+      {/* MODAL CONFIGURAÇÃO */}
       {showConfigModal && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowConfigModal(false)} style={{ animation: 'fadeIn 0.2s ease' }} />
@@ -1338,21 +1173,36 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
             </div>
             <div className="px-6 py-6 space-y-6">
               <div className="flex flex-col items-center">
-                <input type="number" value={questionLimit === 0 ? '' : questionLimit} onChange={handleLimitInputChange} className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight bg-transparent text-center w-full outline-none border-none p-0 m-0 focus:ring-0 placeholder-slate-200" />
+                <input
+                  type="number" value={questionLimit === 0 ? '' : questionLimit}
+                  onChange={handleLimitInputChange}
+                  className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight bg-transparent text-center w-full outline-none border-none p-0 m-0 focus:ring-0 placeholder-slate-200"
+                />
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">Questões selecionadas</span>
               </div>
               <div>
-                <input type="range" min="1" max={maxQuestionLimit} value={questionLimit || 1} step={1} onChange={(e) => setQuestionLimit(parseInt(e.target.value))} className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-[#BD4234]" />
+                <input
+                  type="range" min="1" max={maxQuestionLimit} value={questionLimit || 1} step={1}
+                  onChange={e => setQuestionLimit(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-[#BD4234]"
+                />
                 <div className="flex justify-between text-xs font-medium text-slate-400 mt-1"><span>1</span><span>{maxQuestionLimit} máx</span></div>
               </div>
               <div>
                 <label className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${isSmartSelectionEnabled ? 'bg-[#BD4234] text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}><Zap size={16} /></div>
-                    <div><span className="font-semibold text-sm text-slate-700 dark:text-slate-300 block">Seleção Inteligente</span><span className="text-[11px] text-slate-400 leading-tight block mt-0.5">{isSmartSelectionEnabled ? 'Prioriza questões onde você tem mais dificuldade' : 'Questões serão selecionadas aleatoriamente'}</span></div>
+                    <div>
+                      <span className="font-semibold text-sm text-slate-700 dark:text-slate-300 block">Seleção Inteligente</span>
+                      <span className="text-[11px] text-slate-400 leading-tight block mt-0.5">
+                        {isSmartSelectionEnabled ? 'Prioriza questões onde você tem mais dificuldade' : 'Questões serão selecionadas aleatoriamente'}
+                      </span>
+                    </div>
                   </div>
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSmartSelectionEnabled ? 'border-[#BD4234] bg-[#BD4234]' : 'border-slate-300 dark:border-slate-600'}`}>{isSmartSelectionEnabled && <CheckCircle2 size={12} className="text-white" />}</div>
-                  <input type="checkbox" checked={isSmartSelectionEnabled} onChange={(e) => setIsSmartSelectionEnabled(e.target.checked)} className="hidden" />
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSmartSelectionEnabled ? 'border-[#BD4234] bg-[#BD4234]' : 'border-slate-300 dark:border-slate-600'}`}>
+                    {isSmartSelectionEnabled && <CheckCircle2 size={12} className="text-white" />}
+                  </div>
+                  <input type="checkbox" checked={isSmartSelectionEnabled} onChange={e => setIsSmartSelectionEnabled(e.target.checked)} className="hidden" />
                 </label>
                 {isSmartSelectionEnabled && hasEnoughDataForSmartSelection && topDifficultyNodes.length > 0 && !isLoadingDifficulty && (
                   <div className="mt-3 p-3 bg-amber-50/70 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/30 rounded-lg" style={{ animation: 'fadeIn 0.25s ease' }}>
@@ -1360,44 +1210,44 @@ const FilterScreen: React.FC<FilterScreenProps> = ({
                     <div className="space-y-1.5">
                       {topDifficultyNodes.map((node, index) => (
                         <div key={index} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1"><span className="text-[10px] font-black text-amber-500/60 shrink-0">#{index + 1}</span><span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{node.tema !== 'Geral' ? node.tema : node.especialidade}</span></div>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-[10px] font-black text-amber-500/60 shrink-0">#{index + 1}</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{node.tema !== 'Geral' ? node.tema : node.especialidade}</span>
+                          </div>
                           <span className={`text-xs font-bold shrink-0 ${node.accuracy < 50 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>{node.accuracy}%</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {isSmartSelectionEnabled && (isLoadingDifficulty || isLoadingHistory) && (
-                  <div className="mt-3 flex items-center justify-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg"><Loader2 size={14} className="animate-spin text-[#BD4234]" /><span className="text-xs text-slate-500">{isLoadingHistory ? 'Carregando histórico...' : 'Analisando seu histórico...'}</span></div>
+                {isSmartSelectionEnabled && isLoadingDifficulty && (
+                  <div className="mt-3 flex items-center justify-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                    <Loader2 size={14} className="animate-spin text-[#BD4234]" />
+                    <span className="text-xs text-slate-500">Analisando seu histórico...</span>
+                  </div>
                 )}
                 {isSmartSelectionEnabled && !hasEnoughDataForSmartSelection && isDifficultyDataReady && !isLoadingDifficulty && (
-                  <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg"><p className="text-xs text-slate-500 dark:text-slate-400 text-center">Sem dados suficientes ainda. Resolva pelo menos 10 questões para ativar a priorização inteligente.</p></div>
+                  <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 text-center">Sem dados suficientes ainda. Resolva pelo menos 10 questões para ativar a priorização inteligente.</p>
+                  </div>
                 )}
               </div>
-              <button onClick={handleStartQuiz} className="w-full py-3.5 bg-[#BD4234] text-white rounded-lg font-semibold text-sm hover:bg-[#a63a2e] active:scale-[0.98] transition-all flex items-center justify-center gap-2">COMEÇAR <ArrowRight size={16} /></button>
+              <button onClick={handleStartQuiz} className="w-full py-3.5 bg-[#BD4234] text-white rounded-lg font-semibold text-sm hover:bg-[#a63a2e] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                COMEÇAR <ArrowRight size={16} />
+              </button>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes scaleIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
-        @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 20px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #334155;
-        }
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; }
       `}</style>
     </div>
   );
